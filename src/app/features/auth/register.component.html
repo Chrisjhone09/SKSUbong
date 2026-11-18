@@ -1,0 +1,60 @@
+<main class="signin">
+  <section class="brand-panel">
+    <div class="brand"><span class="logo">SK</span> SK-SUbong</div>
+    <div class="welcome">
+      <p class="eyebrow">JOIN YOUR CAMPUS COMMUNITY</p>
+      <h1>Create your<br />school account.</h1>
+      <p>
+        Use your enrolled school ID, name, and email exactly as they appear in the current
+        enrollment list.
+      </p>
+    </div>
+    <small>SK-SUbong · Information Management System</small>
+  </section>
+  <section class="login-panel">
+    <form (ngSubmit)="register()">
+      <span class="eyebrow">NEW SCHOOL ACCOUNT</span>
+      <h2>Register</h2>
+      <p>Enter your credentials to request access.</p>
+      <div class="form-grid">
+        <label
+          >First name<input
+            name="firstName"
+            [(ngModel)]="firstName"
+            required
+            maxlength="80" /></label
+        ><label
+          >Middle name<input name="middleName" [(ngModel)]="middleName" maxlength="80"
+        /></label>
+      </div>
+      <label
+        >Last name<input name="lastName" [(ngModel)]="lastName" required maxlength="80"
+      /></label>
+      <label
+        >Student / staff ID<input name="schoolId" [(ngModel)]="schoolId" required maxlength="32"
+      /></label>
+      <label
+        >Email<input name="email" type="email" [(ngModel)]="email" required maxlength="254"
+      /></label>
+      <label
+        >Password<input
+          name="password"
+          type="password"
+          [(ngModel)]="password"
+          required
+          minlength="12"
+          autocomplete="new-password"
+      /></label>
+      @if (error()) {
+        <div class="alert error" role="alert">{{ error() }}</div>
+      }
+      @if (notice()) {
+        <div class="alert success" role="status">{{ notice() }}</div>
+      }
+      <button class="primary full" [disabled]="busy()">
+        {{ busy() ? 'Submitting…' : 'Create account' }}
+      </button>
+      <small>Already registered? <a routerLink="/sign-in">Sign in</a></small>
+    </form>
+  </section>
+</main>

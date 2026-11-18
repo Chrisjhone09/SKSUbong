@@ -1,0 +1,48 @@
+<main class="signin">
+  <section class="brand-panel">
+    <div class="brand"><span class="logo">SK</span> SK-SUbong</div>
+    <div class="welcome">
+      <p class="eyebrow">YOUR CAMPUS COMMUNITY</p>
+      <h1>Your campus.<br />Connected.</h1>
+      <p>
+        Find trusted campus information, connect with your school community, and keep up with your
+        classes.
+      </p>
+    </div>
+    <small>SK-SUbong · Information Management System</small>
+  </section>
+  <section class="login-panel">
+    <form (ngSubmit)="login()">
+      <span class="eyebrow">WELCOME TO SK-SUbong</span>
+      <h2>Welcome back</h2>
+      <p>Sign in using your school ID number or email.</p>
+      <label
+        >School ID or email<input
+          name="schoolId"
+          [(ngModel)]="schoolId"
+          required
+          autocomplete="username"
+          placeholder="ID number or email"
+      /></label>
+      <label
+        >Password<input
+          name="password"
+          type="password"
+          [(ngModel)]="password"
+          required
+          autocomplete="current-password"
+          placeholder="Your password"
+      /></label>
+      @if (error()) {
+        <div class="alert error" role="alert">{{ error() }}</div>
+      }
+      <button class="primary full" [disabled]="busy()">
+        {{ busy() ? 'Signing in…' : 'Sign in' }}
+      </button>
+      <small
+        >Your workspace opens according to your verified role.
+        <a routerLink="/register">Create an account</a></small
+      >
+    </form>
+  </section>
+</main>

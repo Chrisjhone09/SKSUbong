@@ -1,0 +1,676 @@
+<div class="shell">
+  <aside>
+    <div class="brand">
+      <span class="logo">SK</span>
+      <div>SK-SUbong<small>Campus information</small></div>
+    </div>
+    <p class="nav-label">WORKSPACE</p>
+    <nav>
+      @for (item of pages(); track item) {
+        <button [class.active]="page() === item" (click)="navigate(item)">
+          <span class="nav-dot"></span>{{ item }}
+        </button>
+      }
+    </nav>
+    <div class="account-chip">
+      <span class="avatar">{{ initials() }}</span>
+      <div>
+        <strong>{{ account()!['full_name'] }}</strong><small>{{ account()!['role'] }}</small>
+      </div>
+    </div>
+  </aside>
+  <div class="workspace">
+    <header>
+      <span
+        >SK-SUbong <span class="muted">/ {{ page() }}</span></span
+      ><span class="avatar">{{ initials() }}</span>
+    </header>
+    <main class="content">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">CAMPUS WORKSPACE</p>
+          <h1>{{ page() }}</h1>
+          <p>
+            {{
+              page() === 'Home'
+                ? 'Welcome back. Here is what is happening around campus.'
+                : 'Your campus information, connected and organized.'
+            }}
+          </p>
+        </div>
+        <div class="actions">
+          @if (page() === 'Home' && can('posts.write')) {
+            <button class="primary" (click)="openForm('post')">+ Create post</button>
+          }
+          @if (page() === 'To Go' && can('organizations.publish')) {
+            <button class="primary" (click)="openForm('event')">+ Create event</button>
+          }
+          @if (page() === 'Announcements' && can('official.manage')) {
+            <button class="primary" (click)="openForm('announcement')">+ Create notice</button>
+          }
+          @if (page() === 'Campus Info' && can('official.manage')) {
+            <button class="primary" (click)="openForm('information')">+ Add information</button>
+          }
+        </div>
+      </div>
+      @if (account()!['verification_status'] !== 'Verified') {
+        <div class="alert">
+          Your role verification is {{ account()!['verification_status'] }}. Publishing and
+          administrative actions require verification.
+        </div>
+      }
+      @if (error()) {
+        <div class="alert error" role="alert">{{ error() }}</div>
+      }
+      @if (notice()) {
+        <div class="alert success" role="status">{{ notice() }}</div>
+      }
+      @if (page() === 'To Go' || page() === 'Saved Items') {
+        <div class="tabs">
+          @for (
+            type of page() === 'To Go'
+              ? ['places', 'events']
+              : ['posts', 'places', 'events', 'announcements'];
+            track type
+          ) {
+            <button [class.active]="kind === type" (click)="tab(type)">
+              {{ type | titlecase }}
+            </button>
+          }
+        </div>
+      }
+      @if (form() && form() !== 'logout') {
+        <div class="editor-layout">
+          <section class="card">
+            <div class="section-title">
+              <h2>{{ form() | titlecase }}</h2>
+              <button (click)="form.set('')" aria-label="Close form">×</button>
+            </div>
+            <form (ngSubmit)="submit()">
+              @if (form() === 'post') {
+                <label
+                  >Post type<select name="postType" [(ngModel)]="draft['postType']">
+                    @for (t of ['General', 'Concern', 'Feedback', 'Recommendation']; track t) {
+                      <option>{{ t }}</option>
+                    }
+                  </select></label
+                >
+                @if (can('organizations.publish')) {
+                  <label
+                    >Publish as<select name="organizationId" [(ngModel)]="draft['organizationId']">
+                      <option [ngValue]="null">Personal post</option>
+                      @for (o of organizations(); track o['organization_id']) {
+                        <option [ngValue]="o['organization_id']">{{ o['name'] }}</option>
+                      }
+                    </select></label
+                  >
+                }
+              }
+              @if (form() === 'event') {
+                <label
+                  >Organization<select
+                    name="organization"
+                    [(ngModel)]="draft['organizationId']"
+                    required
+                  >
+                    <option value="">Select organization</option>
+                    @for (o of organizations(); track o['organization_id']) {
+                      <option [value]="o['organization_id']">{{ o['name'] }}</option>
+                    }
+                  </select></label
+                ><label
+                  >Location<input
+                    name="location"
+                    [(ngModel)]="draft['location']"
+                    required
+                    maxlength="255"
+                /></label>
+                <div class="two-col">
+                  <label
+                    >Start<input
+                      type="datetime-local"
+                      name="start"
+                      [(ngModel)]="draft['start']"
+                      required /></label
+                  ><label
+                    >End<input type="datetime-local" name="end" [(ngModel)]="draft['end']" required
+                  /></label>
+                </div>
+              }
+              @if (['post', 'event', 'update', 'announcement', 'information'].includes(form())) {
+                <label
+                  >Title<input
+                    name="title"
+                    [(ngModel)]="draft['title']"
+                    required
+                    maxlength="200" /></label
+                ><label
+                  >Content<textarea
+                    name="content"
+                    [(ngModel)]="draft[form() === 'event' ? 'description' : 'content']"
+                    required
+                    maxlength="20000"
+                    rows="6"
+                  ></textarea>
+                </label>
+              }
+              @if (form() === 'post' && !draft['organizationId']) {
+                <label class="checkbox"
+                  ><input type="checkbox" name="anonymous" [(ngModel)]="draft['isAnonymous']" />Post
+                  anonymously</label
+                >
+              }
+              @if (form() === 'announcement') {
+                <label
+                  >Audience<select name="audience" [(ngModel)]="draft['audience']">
+                    @for (a of ['All students', 'All campus', 'Faculty', 'Staff']; track a) {
+                      <option>{{ a }}</option>
+                    }
+                  </select></label
+                >
+              }
+              @if (form() === 'information') {
+                <label
+                  >Category<select name="category" [(ngModel)]="draft['category']">
+                    @for (cat of ['Directory', 'Services', 'Guidelines']; track cat) {
+                      <option>{{ cat }}</option>
+                    }
+                  </select></label
+                ><label
+                  >Status<select name="status" [(ngModel)]="draft['status']">
+                    <option>Published</option>
+                    <option>Inactive</option>
+                  </select></label
+                >
+              }
+              @if (form() === 'interaction') {
+                <label
+                  >Interaction<select name="interaction" [(ngModel)]="draft['type']">
+                    <option>Comment</option>
+                    <option>Rating</option>
+                  </select></label
+                >
+                @if (draft['type'] === 'Rating') {
+                  <label
+                    >Rating<select name="rating" [(ngModel)]="draft['rating']">
+                      @for (n of [1, 2, 3, 4, 5]; track n) {
+                        <option [ngValue]="n">{{ n }} out of 5</option>
+                      }
+                    </select></label
+                  >
+                } @else {
+                  <label
+                    >Comment<textarea
+                      name="comment"
+                      [(ngModel)]="draft['comment']"
+                      required
+                      maxlength="2000"
+                    ></textarea>
+                  </label>
+                }
+              }
+              @if (form() === 'report') {
+                <label
+                  >Reason<select name="reason" [(ngModel)]="draft['reason']" required>
+                    <option>Incorrect information</option>
+                    <option>Inappropriate content</option>
+                    <option>Duplicate content</option>
+                    <option>Other</option>
+                  </select></label
+                ><label
+                  >Details<textarea
+                    name="details"
+                    [(ngModel)]="draft['details']"
+                    required
+                  ></textarea>
+                </label>
+              }
+              @if (form() === 'resolution') {
+                <h3>{{ draft['title'] }}</h3>
+                <p>{{ draft['reason'] }} · {{ draft['details'] }}</p>
+                @if (draft['internal_author']) {
+                  <div class="alert">
+                    Internal author: {{ draft['internal_author'] }} · For authorized moderation only
+                  </div>
+                }
+                <label
+                  >Moderation action<select name="action" [(ngModel)]="draft['action']">
+                    <option>Retain</option>
+                    <option>Remove</option>
+                    <option>Restore</option>
+                  </select></label
+                ><label
+                  >Review notes<textarea
+                    name="notes"
+                    [(ngModel)]="draft['notes']"
+                    required
+                    maxlength="2000"
+                  ></textarea>
+                </label>
+              }
+              @if (form() === 'profile') {
+                <label
+                  >Display name<input
+                    name="fullName"
+                    [(ngModel)]="draft['fullName']"
+                    required
+                    maxlength="150"
+                /></label>
+              }
+              <div class="actions">
+                <button class="primary" [disabled]="busy()">
+                  {{ busy() ? 'Saving…' : 'Save changes' }}</button><button
+                  type="button"
+                  (click)="form.set('')"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </section>
+          <section class="card help">
+            <h3>{{ form() === 'post' ? 'Post privacy' : 'Before you save' }}</h3>
+            <p>
+              {{
+                form() === 'post'
+                  ? 'Anonymous posts hide your identity from the public feed. Authorized moderators retain access to the internal author.'
+                  : 'Review your information before submitting. Changes are checked against your current role and permissions.'
+              }}
+            </p>
+          </section>
+        </div>
+      } @else if (details() && page() !== 'Campus Info') {
+        <section class="card detail">
+          <button (click)="details.set(null)">← Back to list</button>
+          <p class="eyebrow">{{ details()!['category'] || details()!['kind'] }}</p>
+          <h2>{{ rowTitle(details()!) }}</h2>
+          <p class="muted">
+            {{ details()!['author_name'] || details()!['location'] }}
+            {{ details()!['organization_name'] }}
+          </p>
+          <p class="body-copy">{{ details()!['content'] || details()!['description'] }}</p>
+          @if (details()!['kind'] !== 'updates') {
+            <div class="interaction-bar">
+              <button (click)="interact('Upvote')">
+                ↑ {{ interactions()?.['summary']?.upvotes || 0 }}</button
+              ><button (click)="interact('Downvote')">
+                ↓ {{ interactions()?.['summary']?.downvotes || 0 }}</button
+              ><button (click)="interact('Rating')">
+                ☆ Rate ·
+                {{ (interactions()?.['summary']?.rating | number: '1.1-1') || '—' }}</button
+              ><button (click)="interact('Comment')">Comment</button>
+              @if (details()!['kind'] === 'places') {
+                <button (click)="interact('Recommendation')">Recommend</button>
+              }
+            </div>
+            <div class="actions">
+              <button class="primary" (click)="saveBookmark()">Save item</button
+              ><button (click)="saveBookmark(false)">Unsave</button>
+              @if (details()!['kind'] !== 'places') {
+                <button (click)="openForm('report')">Report</button>
+              }
+            </div>
+            <h3>Comments</h3>
+            @for (comment of interactions()?.['comments'] || []; track comment.interaction_id) {
+              <div class="comment">
+                <strong>{{ comment.full_name }}</strong>
+                <p>{{ comment.comment }}</p>
+              </div>
+            } @empty {
+              <p class="muted">No comments yet.</p>
+            }
+          }
+        </section>
+      } @else if (page() === 'My Account') {
+        <section class="card">
+          <div class="profile-heading">
+            <span class="avatar large">{{ initials() }}</span>
+            <div>
+              <h2>{{ account()!['full_name'] }}</h2>
+              <p>{{ account()!['role'] }} · {{ account()!['verification_status'] }}</p>
+            </div>
+          </div>
+          <div class="actions">
+            <button
+              class="primary"
+              (click)="openForm('profile', { fullName: account()!['full_name'] })"
+            >
+              Edit display name</button
+            ><button (click)="openForm('logout')">Log out</button>
+          </div>
+        </section>
+      } @else {
+        @if (page() !== 'Database' && page() !== 'System Security' && page() !== 'Permissions') {
+          <div class="search-row">
+            <input
+              aria-label="Search current list"
+              placeholder="Search this list…"
+              [(ngModel)]="search"
+            />
+            @if (page() === 'My Class') {
+              <select aria-label="Filter by teacher" [(ngModel)]="teacher" (change)="performLoad()">
+                <option value="">All teachers</option>
+                @for (r of rows(); track r['class_id']) {
+                  <option [value]="r['faculty_user_id']">
+                    {{ r['teacher'] }} · {{ r['subject'] }}
+                  </option>
+                }
+              </select>
+            }
+          </div>
+        }
+        @if (page() === 'User Accounts') {
+          <section class="card">
+            <h2>Enrollment allow-list</h2>
+            <p>
+              Upload a CSV or XLSX file with
+              <code>school_id,email,first_name,middle_name,last_name,role</code>. Only students
+              whose details match an active roster record can create an account.
+            </p>
+            <p>
+              <a
+                class="download-link"
+                href="/enrollment-template.csv"
+                download="enrollment-template.csv"
+                >↓ Download Excel template (.csv)</a
+              >
+            </p>
+            <label
+              >CSV or Excel file<input
+                type="file"
+                accept=".csv,.xlsx"
+                (change)="uploadRoster($event)"
+            /></label>
+          </section>
+          <div class="stack">
+            @for (r of filtered(); track r['user_id']) {
+              <section class="card">
+                <h3>
+                  {{ r['full_name'] }} <small>{{ r['school_id'] }}</small>
+                </h3>
+                <div class="user-fields">
+                  <label
+                    >Role<select [(ngModel)]="r['role']">
+                      @for (role of roles; track role) {
+                        <option>{{ role }}</option>
+                      }
+                    </select></label
+                  ><label
+                    >Account<select [(ngModel)]="r['account_status']">
+                      <option>Active</option>
+                      <option>Suspended</option>
+                      <option>Inactive</option>
+                    </select></label
+                  ><label
+                    >Verification<select [(ngModel)]="r['verification_status']">
+                      <option>Pending</option>
+                      <option>Verified</option>
+                      <option>Rejected</option>
+                    </select></label
+                  ><label>Department<input [(ngModel)]="r['department']" maxlength="150" /></label
+                  ><label>Office<input [(ngModel)]="r['office']" maxlength="150" /></label>
+                </div>
+                <div class="actions">
+                  <button [disabled]="busy()" (click)="updateUser(r)">Save account</button
+                  ><button
+                    [disabled]="busy() || r['account_status'] === 'Inactive'"
+                    (click)="deleteUser(r)"
+                  >
+                    Delete account
+                  </button>
+                </div>
+              </section>
+            }
+          </div>
+        } @else if (page() === 'Enrolled Students') {
+          <section class="card table-wrap">
+            <h2>Enrolled students</h2>
+            <p>Students imported from the enrollment roster, including account creation status.</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>School ID</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Account</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of filtered(); track r['roster_id']) {
+                  <tr>
+                    <td>{{ r['last_name'] }}, {{ r['first_name'] }} {{ r['middle_name'] }}</td>
+                    <td>{{ r['school_id'] }}</td>
+                    <td>{{ r['email'] }}</td>
+                    <td>{{ r['role'] }}</td>
+                    <td>
+                      <span class="badge" [class.badge-warning]="!r['account_created']">{{
+                        r['account_created'] ? r['account_status'] || 'Created' : 'Not created'
+                      }}</span>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="muted">No enrollment records imported.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        } @else if (page() === 'Permissions') {
+          <section class="card table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Permission</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of rows(); track r['role'] + r['permission']) {
+                  <tr>
+                    <td>{{ r['role'] }}</td>
+                    <td>{{ r['permission'] }}</td>
+                    <td>
+                      <span class="badge">{{ r['enabled'] ? 'Enabled' : 'Disabled' }}</span>
+                    </td>
+                    <td>
+                      <button
+                        [disabled]="busy() || r['role'] === 'SystemAdministrator'"
+                        (click)="togglePermission(r)"
+                      >
+                        Toggle
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        } @else if (page() === 'System Security') {
+          <section class="card">
+            <h2>Security controls</h2>
+            <p>These settings take effect on the next request.</p>
+            @for (r of rows(); track r['setting_key']) {
+              <div class="list-row">
+                <div>
+                  <h3>
+                    {{
+                      r['setting_key'] === 'posting_enabled'
+                        ? 'Campus posting'
+                        : 'Content interactions'
+                    }}
+                  </h3>
+                  <span class="badge">{{
+                    r['setting_value'] === 'true' ? 'Enabled' : 'Disabled'
+                  }}</span>
+                </div>
+                <button [disabled]="busy()" (click)="toggleSetting(r)">Toggle</button>
+              </div>
+            }
+          </section>
+        } @else if (page() === 'Database') {
+          @for (r of rows(); track $index) {
+            <section class="card">
+              <span class="badge">Connected · SQL Server</span>
+              <h2>{{ r['database_name'] }}</h2>
+              <p>
+                {{ r['domain_tables'] }} domain tables · Schema version {{ r['schema_version'] }}
+              </p>
+              <p class="muted">
+                SQL Server {{ r['version'] }} · Manage this database in SQL Server Management
+                Studio.
+              </p>
+            </section>
+          }
+        } @else if (page() === 'Reported Content') {
+          <div class="stack">
+            @for (r of filtered(); track r['report_id']) {
+              <section class="card">
+                <div class="list-row">
+                  <div>
+                    <span class="badge">{{ r['status'] }}</span>
+                    <h3>{{ r['title'] }}</h3>
+                    <p>{{ r['reason'] }} · {{ r['details'] }}</p>
+                  </div>
+                  <button (click)="openForm('resolution', r)">Review</button>
+                </div>
+                <details>
+                  <summary>Resolution history</summary>
+                  @for (h of reportHistory(r); track h['moderation_id']) {
+                    <div class="comment">
+                      <strong>{{ h['resolution_action'] }}</strong>
+                      <p>{{ h['review_notes'] }}</p>
+                      <small>{{ h['reviewed_at'] | date: 'medium' }}</small>
+                    </div>
+                  } @empty {
+                    <p>No resolutions recorded.</p>
+                  }
+                </details>
+              </section>
+            } @empty {
+              <div class="empty card">No content reports to review.</div>
+            }
+          </div>
+        } @else if (page() === 'Campus Info') {
+          <div class="stack">
+            @for (r of filtered(); track r['information_id']) {
+              <section class="card">
+                <span class="badge">{{ r['category'] }} · {{ r['status'] }}</span>
+                <h2>{{ r['title'] }}</h2>
+                <p class="body-copy">{{ r['content'] }}</p>
+                @if (can('official.manage')) {
+                  <div class="actions">
+                    <button (click)="openForm('information', r)">Edit information</button
+                    ><button (click)="history(r)">Revision history</button>
+                  </div>
+                }
+              </section>
+            }
+          </div>
+          @if (revisions().length) {
+            <section class="card revision-list">
+              <h2>Revision history</h2>
+              @for (r of revisions(); track r['revision_id']) {
+                <div class="list-row">
+                  <div>
+                    <h3>{{ r['title'] }}</h3>
+                    <p>{{ r['recorded_at'] | date: 'medium' }} · {{ r['status'] }}</p>
+                    <p>{{ r['content'] }}</p>
+                  </div>
+                  <button [disabled]="busy()" (click)="restoreRevision(r)">Restore revision</button>
+                </div>
+              }
+            </section>
+          }
+        } @else {
+          <div
+            [class.cards-grid]="
+              page() === 'To Go' || page() === 'My Class' || page() === 'Get to Know'
+            "
+            class="stack"
+          >
+            @for (r of filtered(); track $index) {
+              <article class="card item">
+                <div class="item-main">
+                  <span class="badge">{{
+                    r['category'] ||
+                      r['place_type'] ||
+                      r['role'] ||
+                      (page() === 'My Class'
+                        ? r['enrolled']
+                          ? 'Added class'
+                          : 'Available class'
+                        : kind)
+                  }}</span>
+                  <h2>{{ rowTitle(r) }}</h2>
+                  <p>
+                    {{
+                      r['author_name'] ||
+                        r['teacher'] ||
+                        r['department'] ||
+                        r['office'] ||
+                        r['location']
+                    }}
+                  </p>
+                  @if (r['organization_name']) {
+                    <p>{{ r['organization_name'] }}</p>
+                  }
+                  @if (page() === 'Get to Know') {
+                    <p>{{ r['subjects'] }}</p>
+                    <p>{{ r['organizations'] }}</p>
+                  }
+                  @if (page() === 'My Class') {
+                    <p>{{ r['section'] }} · {{ r['schedule'] }}</p>
+                    <p>{{ r['update_count'] }} updates</p>
+                  }
+                  @if (page() === 'To Go' && kind === 'events') {
+                    <p>{{ r['start_datetime'] | date: 'medium' }}</p>
+                  }
+                </div>
+                <div class="actions">
+                  @if (page() === 'My Class') {
+                    @if (can('classes.enroll')) {
+                      <button [disabled]="r['enrolled'] || busy()" (click)="enroll(r)">
+                        {{ r['enrolled'] ? 'Added' : 'Add class' }}
+                      </button>
+                    }
+                    @if (can('classes.publish') && r['faculty_user_id'] === account()!['user_id']) {
+                      <button (click)="openForm('update', r)">Publish update</button>
+                    }
+                  } @else if (page() !== 'Get to Know') {
+                    <button (click)="open(r)">View details →</button>
+                    @if (page() === 'Announcements' && can('official.manage')) {
+                      <button [disabled]="busy()" (click)="announcementStatus(r)">
+                        {{ r['status'] === 'Published' ? 'Deactivate' : 'Restore' }}
+                      </button>
+                    }
+                  }
+                </div>
+              </article>
+            } @empty {
+              <section class="card empty">
+                <h2>Nothing here yet</h2>
+                <p>New content will appear here when it is available.</p>
+              </section>
+            }
+          </div>
+        }
+      }
+      @if (form() === 'logout') {
+        <div class="modal-backdrop">
+          <section class="card modal">
+            <h2>Log out of SK-SUbong?</h2>
+            <p>You will return to the school sign-in page.</p>
+            <div class="actions">
+              <button (click)="form.set('')">Cancel</button
+              ><button class="primary" [disabled]="busy()" (click)="logout()">Log out</button>
+            </div>
+          </section>
+        </div>
+      }
+    </main>
+  </div>
+</div>
